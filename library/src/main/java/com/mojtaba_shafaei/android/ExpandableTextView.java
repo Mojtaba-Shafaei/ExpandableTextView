@@ -17,7 +17,6 @@ import android.support.annotation.IntRange;
 import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.AppCompatTextView;
-import android.text.TextUtils.TruncateAt;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
@@ -27,7 +26,8 @@ public class ExpandableTextView extends AppCompatTextView{
 private final String TAG = "ExpandableTextView";
 private Status status = COLLAPSED;
 
-private int MIN_ROW = 2;
+private int MIN_LINES = 2;
+private int MAX_LINES = 100;
 
 //////////////////////////////////////
 private Drawable _drawable;
@@ -66,27 +66,7 @@ private void init(Context context){
 }
 
 public void setText(String text){
-  setText(text, true);
-}
-
-public void setText(CharSequence text, boolean showDrawable){
   super.setText(text);
-  if(text.length() > 0 && showDrawable){
-    post(new Runnable(){
-      @Override
-      public void run(){
-        if(getLineCount() <= 1){
-          setDrawable(null);
-        } else{
-          setDrawable(getRotateDrawable(_drawable, 0));
-        }
-      }
-    });
-  } else{
-    setDrawable(null);
-  }
-
-  refreshDrawableState();
   collapseTextView();
 }
 
@@ -102,34 +82,42 @@ public void setDrawableTintColor(@ColorInt int color){
 public void collapseTextView(){
   try{
     clearAnimation();
-
-    final ValueAnimator animator = ValueAnimator.ofInt(getLineCount(), MIN_ROW).setDuration(250);
-    animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener(){
-      int lastValue = -1;
-
+    post(new Runnable(){
       @Override
-      public void onAnimationUpdate(ValueAnimator animation){
-        int value = (int) animation.getAnimatedValue();
-        if(value == lastValue){
-          return;
+      public void run(){
+        final int lineCount = getLineCount();
+
+        if(lineCount <= MIN_LINES){
+          setDrawable(null);
+        } else{
+          final ValueAnimator animator = ValueAnimator.ofInt(lineCount, MIN_LINES).setDuration(250);
+          animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener(){
+            int lastValue = -1;
+
+            @Override
+            public void onAnimationUpdate(ValueAnimator animation){
+              int value = (int) animation.getAnimatedValue();
+              if(value == lastValue){
+                return;
+              }
+              lastValue = value;
+
+              setMaxLines(value);
+            }
+          });
+          animator.addListener(new AnimatorListenerAdapter(){
+            @Override
+            public void onAnimationEnd(Animator animation){
+              super.onAnimationEnd(animation);
+              animator.removeAllListeners();
+              animator.removeAllUpdateListeners();
+            }
+          });
+          animator.start();
+          setDrawable(_drawable);
         }
-        lastValue = value;
-
-        setMaxLines(value);
       }
     });
-    animator.addListener(new AnimatorListenerAdapter(){
-      @Override
-      public void onAnimationEnd(Animator animation){
-        super.onAnimationEnd(animation);
-        setDrawable(getRotateDrawable(_drawable, 0));
-        animator.removeAllListeners();
-        animator.removeAllUpdateListeners();
-      }
-    });
-    animator.start();
-
-    setEllipsize(TruncateAt.END);
     status = COLLAPSED;
   } catch(Exception e){
     Log.e("Utility", "collapseTextView: " + e);
@@ -140,25 +128,28 @@ public void collapseTextView(){
 public void expandTextView(){
   try{
     clearAnimation();
-    final ValueAnimator animator = ValueAnimator.ofInt(MIN_ROW, 100).setDuration(400);
-    animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener(){
+    final int lineCount = getLineCount();
+    if(lineCount > MIN_LINES){
+      final ValueAnimator animator = ValueAnimator.ofInt(MIN_LINES, 100).setDuration(400);
+      animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener(){
 
-      @Override
-      public void onAnimationUpdate(ValueAnimator animation){
-        int value = (int) animation.getAnimatedValue();
-        setMaxLines(value);
-      }
-    });
-    animator.addListener(new AnimatorListenerAdapter(){
-      @Override
-      public void onAnimationEnd(Animator animation){
-        super.onAnimationEnd(animation);
-        setDrawable(getRotateDrawable(_drawable, 180));
-        animator.removeAllListeners();
-        animator.removeAllUpdateListeners();
-      }
-    });
-    animator.start();
+        @Override
+        public void onAnimationUpdate(ValueAnimator animation){
+          int value = (int) animation.getAnimatedValue();
+          setMaxLines(value);
+        }
+      });
+      animator.addListener(new AnimatorListenerAdapter(){
+        @Override
+        public void onAnimationEnd(Animator animation){
+          super.onAnimationEnd(animation);
+          animator.removeAllListeners();
+          animator.removeAllUpdateListeners();
+          setDrawable(getRotateDrawable(_drawable, 180));
+        }
+      });
+      animator.start();
+    }
     setEllipsize(null);
     status = EXPANDED;
 
@@ -167,8 +158,8 @@ public void expandTextView(){
   }
 }
 
-public void setMinRows(@IntRange(from = 1, to = 50) int minRows){
-  this.MIN_ROW = minRows;
+public void setMinRows(@IntRange(from = 1, to = 100) int minRows){
+  this.MIN_LINES = minRows;
 }
 
 public void toggle(){

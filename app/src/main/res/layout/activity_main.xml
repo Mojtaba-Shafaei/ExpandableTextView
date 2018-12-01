@@ -12,9 +12,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginTop="16dp"
-    android:minLines="2"
     android:lineSpacingMultiplier="1.5"
-    android:lines="2"
     tools:text="@tools:sample/lorem"/>
 
 </LinearLayout>
