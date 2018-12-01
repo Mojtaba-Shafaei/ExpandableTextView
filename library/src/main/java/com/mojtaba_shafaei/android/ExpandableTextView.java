@@ -65,6 +65,10 @@ private void init(Context context){
 
 }
 
+public void setText(String text){
+  setText(text, true);
+}
+
 public void setText(CharSequence text, boolean showDrawable){
   super.setText(text);
   if(text.length() > 0 && showDrawable){
@@ -83,6 +87,7 @@ public void setText(CharSequence text, boolean showDrawable){
   }
 
   refreshDrawableState();
+  collapseTextView();
 }
 
 public void setDrawable(Drawable drawable){
@@ -94,7 +99,7 @@ public void setDrawableTintColor(@ColorInt int color){
   refreshDrawableState();
 }
 
-private void collapseTextView(){
+public void collapseTextView(){
   try{
     clearAnimation();
 
@@ -132,7 +137,7 @@ private void collapseTextView(){
 
 }
 
-private void expandTextView(){
+public void expandTextView(){
   try{
     clearAnimation();
     final ValueAnimator animator = ValueAnimator.ofInt(MIN_ROW, 100).setDuration(400);

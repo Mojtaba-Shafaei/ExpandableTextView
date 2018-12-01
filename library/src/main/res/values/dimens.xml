@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-  <dimen name="etv_drawable_padding">16dp</dimen>
+  <dimen name="etv_drawable_padding">4dp</dimen>
 </resources>
